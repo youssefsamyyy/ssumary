@@ -1,0 +1,269 @@
+const express = require('express');
+const { VertexAI } = require('@google-cloud/vertexai');
+const cors = require('cors');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
+const path = require('path');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config();
+
+const app = express();
+const port = process.env.PORT || 11111;
+
+// Validate environment variables
+const requiredEnvVars = ['GCLOUD_PROJECT_ID', 'GCLOUD_LOCATION', 'GOOGLE_APPLICATION_CREDENTIALS'];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`Error: Missing required environment variable ${envVar}`);
+    process.exit(1);
+  }
+}
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: "Too many requests, please try again later" }
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(limiter);
+app.use(express.static(path.join(__dirname, 'public')));
+
+// File upload configuration
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  }
+});
+
+// Initialize Vertex AI
+const vertexAI = new VertexAI({
+  project: process.env.GCLOUD_PROJECT_ID,
+  location: process.env.GCLOUD_LOCATION
+});
+
+// Initialize the model - Use Gemini 1.5 Pro (or a newer version if available)
+const model = vertexAI.getGenerativeModel({
+  model: "gemini-1.5-pro-002",
+  generationConfig: {
+    temperature: 0.7,
+    topP: 0.95,
+    maxOutputTokens: 4096,
+  },
+  safetySettings: [
+    {category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE'},
+    {category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE'},
+    {category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE'},
+    {category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE'},
+  ],
+});
+
+// Helper function to extract text from files
+async function extractTextFromFile(file) {
+  try {
+    if (file.mimetype === 'application/pdf') {
+      const data = await pdfParse(file.buffer);
+      return data.text;
+    } else if (
+      file.mimetype === 'application/msword' || 
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      const result = await mammoth.extractRawText({ buffer: file.buffer });
+      return result.value;
+    }
+    throw new Error('Unsupported file type');
+  } catch (error) {
+    console.error('Text extraction error:', error);
+    throw error;
+  }
+}
+
+// File summarization endpoint
+app.post('/summarizeFile', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: "No file provided",
+        message: "يرجى تحميل ملف PDF أو Word"
+      });
+    }
+
+    const fileText = await extractTextFromFile(req.file);
+    if (!fileText || fileText.trim().length === 0) {
+      return res.status(400).json({
+        error: "Empty file",
+        message: "الملف لا يحتوي على نص قابل للقراءة"
+      });
+    }
+
+    const prompt = `قم بتحليل المحتوى التالي وأنشئ ملخصاً مفصلاً وشاملاً:\n\n${fileText}\n\nالملخص يجب أن يحتوي على جميع النقاط الرئيسية والأفكار المهمة.`;
+
+    const request = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      systemInstruction: { 
+        parts: [{ 
+          text: "أنت خبير في تلخيص الوثائق. قدم ملخصاً دقيقاً وشاملاً يحافظ على جميع المعلومات الأساسية." 
+        }] 
+      },
+      generationConfig: {
+        temperature: 1,
+        topP: 0.95,
+        maxOutputTokens: 8192,
+      },
+      safetySettings: [
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }
+      ]
+    };
+
+    const streamingResp = await model.generateContentStream(request);
+    let summary = "";
+    for await (const chunk of streamingResp.stream) {
+      summary += chunk.candidates[0].content.parts[0].text;
+    }
+
+    res.json({
+      summary: summary || "تعذر إنشاء الملخص",
+      status: "success",
+      fileType: req.file.mimetype
+    });
+
+  } catch (error) {
+    console.error("Summary Generation Error:", error);
+    res.status(500).json({
+      error: "Summary generation failed",
+      details: error.message,
+      message: "حدث خطأ أثناء معالجة الملف. يرجى المحاولة مرة أخرى."
+    });
+  }
+});
+
+// Text correction endpoint
+app.post('/correctText', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({
+        error: "لم يتم تقديم أي نص",
+        message: "يجب تقديم نص عربي لتصحيحه"
+      });
+    }
+
+    const prompt = `أنت خبير في علم اللغة العربية وعلم اللغة الاجتماعي، متخصص في التعبيرات المتعلقة بالأطفال. مهمتك هي تحليل فقرة عربية وتصحيح أي تعبيرات تنقل تفسيرات اجتماعية غير دقيقة أو ضارة حول الأطفال.
+
+تعليمات:
+
+1. قم بتحليل الفقرة العربية المقدمة بعناية.
+2. حدد أي تعبيرات متعلقة بالأطفال تنقل تفسيرات مجتمعية غير دقيقة أو ضارة.
+3. اذكر الجملة الأصلية التي تحتوي على الخطأ.
+4. قدم التصحيح المقترح لهذه الجملة مع شرح مختصر للتصحيح بين قوسين.
+5. بعد ذكر جميع التصحيحات، أعد كتابة الفقرة كاملة بالنص المصحح.
+6. لا تستخدم كلمات إنجليزية في ردك.
+7. مثال : تناقش التقارير الدولية ظاهرة استخدام أطفال انتحاريون في الصراعات المسلحة.
+تصحيح: تناقش التقارير الدولية ظاهرة استخدام أطفال يتم استغلالهم في عمليات انتحارية في الصراعات المسلحة (*تم تغيير مصطلح "انتحاريون" لأنه يحمل دلالات قد تكون غير دقيقة ومؤذية في سياق الأطفال المستغلين*).
+
+
+الفقرة المراد تصحيحها:
+${text}`;
+
+    const request = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.3,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+      }
+    };
+
+    const streamingResp = await model.generateContentStream(request);
+    let fullResponse = "";
+    for await (const chunk of streamingResp.stream) {
+      fullResponse += chunk.candidates[0].content.parts[0].text;
+    }
+
+    console.log("Full Model Response:", fullResponse); // For debugging
+
+    const correctionsMatch = fullResponse.matchAll(/الجملة الأصلية التي تحتوي على الخطأ:\s*(.*?)\s*التصحيح المقترح:\s*(.*?)\s*\((.*?)\)/gs);
+    const corrections = [];
+    for (const match of correctionsMatch) {
+      corrections.push({
+        original: match[1]?.trim(),
+        corrected: match[2]?.trim(),
+        explanation: match[3]?.trim(),
+      });
+    }
+
+    const correctedParagraphMatch = fullResponse.match(/الفقرة كاملة بالنص المصحح:\s*([\s\S]*)/);
+    const correctedParagraph = correctedParagraphMatch ? correctedParagraphMatch[1].trim() : text;
+
+    res.json({
+      corrections: corrections,
+      correctedParagraph: correctedParagraph,
+      status: "success",
+      originalText: text,
+    });
+
+  } catch (error) {
+    console.error("خطأ في التصحيح:", error);
+    res.status(500).json({
+      error: "فشل في تصحيح النص",
+      details: error.message,
+      message: "حدث خطأ أثناء معالجة النص"
+    });
+  }
+});
+
+// Basic route for testing
+app.get('/', (req, res) => {
+  res.send('منظومة التصحيح والتلخيص تعمل!');
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date(),
+    services: {
+      textCorrection: true,
+      fileSummarization: true
+    }
+  });
+});
+
+// Serve frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: "حدث خطأ غير متوقع في الخادم"
+  });
+});
+
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on http://localhost:${port}`);
+  console.log(`VertexAI configured with project: ${process.env.GCLOUD_PROJECT_ID}`);
+  console.log(`Available endpoints:`);
+  console.log(`- POST /correctText (Arabic text correction)`);
+  console.log(`- POST /summarizeFile (File summarization)`);
+  console.log(`- GET /health (Health check)`);
+});

@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "accd-452911",
+  "private_key_id": "934a3101ca85384f43b6c8449c851b208bf6158e",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC/EQg49gV+NEx3\nb9RlB9DVLmtmlnC5Y2ZWM0cKjysrIKWayFR7uBDTO2byftOUPXVxq8s32Gy89MNY\nRuiKifkDkNKlnQndDvbENhOvdo/FsCVij4/XlotwU7mLnKxe5s+P0cLBWQHJXhhb\n6MvHldzGGAYIxNJOLYmsCKbMrd/+0j1hIkiveDxmz0XHegce7zEmDEdkUPYmGEAk\nUXIt+zf///a4ZfaEuW7GvSwHFEAuDZIrX+Emy9JDlf0JNKUcO3M6ZR7OirKvnKmq\nK8xhZqBcIxTlUEg/M92MHXbHTbrNHRaX67y0QeHbNUhIBOGjVE+Zp44BXAAfw37U\nkdhSAvaHAgMBAAECggEAB8/S9b09UUEjJTj5xp2wsJ6ivoGFH1dMjlavX2OmIK/H\nhZIOPjay3WgO1/hOfz+aByk+eEyNeZZKTFgt1sg4Wah4rFPE3PhpJ3GMkX53912x\n0ZtMBsT9c3zA18/yjjjCoL8zRsN0Wr7RoSRd/I2IhsLhsEcX0CF1gQajhzfOsjTl\nPo1rtEN6XrXSYZ2HRDSbHRIb39twqDgSXdpx550NAgoEY6QU5mSgyytpo+3rI4lU\nzwRD491UxBYpzBnKRqRcqH8DUUWeE3Yv2AEo4mPakeNkL7JXSucxSYiw/aJei1F9\nv8BfecXXVoB6zEHIHRAmGjhncpxt7A1lSlu2MdPlMQKBgQDfiSTuJsy3vIZEQMYY\nlND6nq+fDy2rdVuBf2SbjsF89EHSBzmLH4GLjJfQihX/7IOut3pmbQysFZuv6c+Z\nyON0op4B6UV90OvnYhA6VEWkTYFAbNAEO9XKIf1MPXF9uAnqPfk0b0weVlnWei1Y\nElpUXpFUQ5LbBG9T5kxNkqAscQKBgQDa0LZ8bttSxnODOl/2lx+p1DPqNfYyBpsn\ndYHneq+FJxCZ890FjUt0nGOq8e3DiFY3TcTQRPmz697kbuA1FUb1rGXrI8KFpD4U\n258XnJuEzMLIwjUsDphKFvW+c5CmNNawmoVbHNnCh+JXsvCUzp9kuD5uktol33FG\nU5eCq7IudwKBgHGGsV7SDb5y3K3lR7ZMPiZKWV8q0kL2A1ctX+cxBUt0scj9Klhh\n0+UPrjqXJr0nXWlqfZtvXrQ29S7OTEUKJZqizCSkWEqhxG1q/FrjWcssIayalrrP\nuLBDuuTxf6YdxctVVi8vJzVxHYcz3buQ9pdKv/xPpVHeWrv9hlsPUJHBAoGAQICb\n+qxXHNyBOqLfnPpJjC+Qqi8EBxUpcYVTKOBikzbDzw4zDirrnlFnlAHDHAu5lo3n\nQZnDngUe7Gm+0AcYpt0OIjWlZu3WmyFukXBJ6+jMVo/hSr52qAiCooTAlC4pR2AV\nhZlIm+6gi0elYchS9kbVqJTDl7x5UMjdddiVKtsCgYB7bI3CjHD2zy0zmY4WU/mv\nCoRyaJLrNFA6tjAQB7GtCMNE16VqxbK4pwgTUyybaWQluUOPZ7TcPGdw/P4o+Pds\nsn/ptKlpuke4rZKyCQMq4G34+75J78hhkJqszFqEhBDmZEsoQEgP0RIMBbNGFfiL\nyGq+B7PTvAUYmp3hAKwuXA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "gemini-app-sa@accd-452911.iam.gserviceaccount.com",
+  "client_id": "114655370588385322276",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gemini-app-sa%40accd-452911.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
