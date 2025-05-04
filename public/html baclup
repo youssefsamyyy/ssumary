@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منظومة التصحيح والتلخيص</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Tahoma', Arial, sans-serif;
+      background-color: #f8f9fa;
+      text-align: right;
+    }
+    .container {
+      max-width: 900px;
+      margin-top: 30px;
+    }
+    .card {
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .card-header {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      text-align: center;
+    }
+    .nav-link.active {
+      font-weight: bold;
+      border-bottom: 3px solid #4285f4 !important;
+    }
+    .result-box {
+      min-height: 150px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 15px;
+      white-space: pre-wrap;
+      line-height: 1.8;
+      font-size: 16px;
+    }
+    .explanation-box {
+      background-color: #f0f8ff;
+      border-right: 4px solid #4285f4;
+    }
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      border-top-color: #333;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-message { display: none; }
+    .section-title {
+      color: #2d2d2d;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .btn {
+      font-weight: 500;
+      padding: 8px 20px;
+    }
+    #search {
+      min-height: 300px;
+    }
+    .search-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    #searchInput {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    #searchResults {
+      margin-top: 15px;
+    }
+    .search-result-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .search-result-item h5 {
+      color: #1a73e8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card shadow">
+      <div class="card-header">
+        <h2 class="text-center mb-0"><i class="fas fa-language"></i> منظومة التصحيح والتلخيص</h2>
+      </div>
+      <div class="card-body">
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button">
+              <i class="fas fa-spell-check"></i> تصحيح النصوص
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file" type="button">
+              <i class="fas fa-file-alt"></i> تلخيص الملفات
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button">
+              <i class="fas fa-search"></i> البحث في المعرفة
+            </button>
+          </li>
+        </ul>
+        
+        <div class="tab-content" id="myTabContent">
+          <!-- Text Correction Tab -->
+          <div class="tab-pane fade show active" id="text" role="tabpanel">
+            <div class="mb-3">
+              <label class="form-label section-title">أدخل النص العربي:</label>
+              <textarea id="textInput" class="form-control" rows="6" placeholder="الصق النص العربي هنا..."></textarea>
+            </div>
+            <button id="correctBtn" class="btn btn-primary">
+              <span id="textSpinner" class="spinner"></span>
+              تصحيح النص
+            </button>
+            
+            <div class="mt-4">
+              <label class="form-label section-title">النص المصحح:</label>
+              <div id="textResult" class="result-box"></div>
+              <button id="copyText" class="btn btn-sm btn-outline-primary mt-2">
+                <i class="fas fa-copy"></i> نسخ النص
+              </button>
+            </div>
+            
+            <div class="mt-4">
+              <label class="form-label section-title">شرح التصحيح:</label>
+              <div id="explanationResult" class="result-box explanation-box"></div>
+            </div>
+            
+            <div id="textError" class="alert alert-danger mt-3 error-message"></div>
+          </div>
+          
+          <!-- File Summarization Tab -->
+          <div class="tab-pane fade" id="file" role="tabpanel">
+            <div class="mb-3">
+              <label class="form-label section-title">رفع ملف (PDF أو Word):</label>
+              <input type="file" id="fileInput" class="form-control" accept=".pdf,.doc,.docx">
+              <div id="fileInfo" class="small text-muted mt-2"></div>
+            </div>
+            <button id="summarizeBtn" class="btn btn-success">
+              <span id="fileSpinner" class="spinner"></span>
+              تلخيص الملف
+            </button>
+            
+            <div class="mt-4">
+              <label class="form-label section-title">الملخص:</label>
+              <div id="fileResult" class="result-box"></div>
+              <button id="copyFile" class="btn btn-sm btn-outline-primary mt-2">
+                <i class="fas fa-copy"></i> نسخ الملخص
+              </button>
+            </div>
+            
+            <div id="fileError" class="alert alert-danger mt-3 error-message"></div>
+          </div>
+          
+          <!-- Search Tab -->
+          <div class="tab-pane fade" id="search" role="tabpanel">
+            <div class="mb-3">
+              <label class="form-label section-title">ابحث في قاعدة المعرفة:</label>
+              <div class="search-container">
+                <input type="text" id="searchInput" class="form-control" placeholder="اكتب كلمة البحث هنا...">
+                <button id="searchBtn" class="btn btn-primary">
+                  <i class="fas fa-search"></i> بحث
+                </button>
+              </div>
+            </div>
+            <div id="searchResults" class="result-box">
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> أدخل كلمة البحث ثم اضغط على زر البحث
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const API_BASE_URL = window.location.origin;
+      
+      // Initialize tabs
+      const tabEls = document.querySelectorAll('[data-bs-toggle="tab"]');
+      tabEls.forEach(tabEl => {
+        tabEl.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tab = new bootstrap.Tab(this);
+          tab.show();
+        });
+      });
+
+      // Helper functions
+      function showError(element, message) {
+        element.textContent = message;
+        element.style.display = 'block';
+      }
+
+      function hideError(element) {
+        element.style.display = 'none';
+      }
+
+      function copyToClipboard(elementId, button) {
+        const text = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const originalHtml = button.innerHTML;
+          button.innerHTML = '<i class="fas fa-check"></i> تم النسخ!';
+          setTimeout(() => button.innerHTML = originalHtml, 2000);
+        });
+      }
+
+      // Text Correction
+      document.getElementById('correctBtn').addEventListener('click', async function() {
+        const text = document.getElementById('textInput').value.trim();
+        const resultEl = document.getElementById('textResult');
+        const explanationEl = document.getElementById('explanationResult');
+        const errorEl = document.getElementById('textError');
+        const spinner = document.getElementById('textSpinner');
+
+        // Clear previous results
+        resultEl.textContent = '';
+        explanationEl.textContent = '';
+        hideError(errorEl);
+
+        if (!text) {
+          showError(errorEl, 'الرجاء إدخال نص عربي لتصحيحه');
+          return;
+        }
+
+        // Show loading state
+        spinner.style.display = 'inline-block';
+        this.disabled = true;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/correctText`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ text })
+          });
+
+          const data = await response.json();
+          if (response.ok) {
+            resultEl.textContent = data.correctedText || text;
+            explanationEl.textContent = data.explanation || "لا توجد أخطاء تحتاج تصحيحاً";
+          } else {
+            throw new Error(data.message || data.error || 'فشل في تصحيح النص');
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          showError(errorEl, error.message);
+        } finally {
+          spinner.style.display = 'none';
+          this.disabled = false;
+        }
+      });
+
+      // File Summarization
+      document.getElementById('summarizeBtn').addEventListener('click', async function() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        const resultEl = document.getElementById('fileResult');
+        const errorEl = document.getElementById('fileError');
+        const spinner = document.getElementById('fileSpinner');
+
+        if (!file) {
+          showError(errorEl, 'الرجاء اختيار ملف أولاً');
+          return;
+        }
+
+        // Reset UI
+        hideError(errorEl);
+        resultEl.textContent = 'جاري معالجة الملف...';
+        spinner.style.display = 'inline-block';
+        this.disabled = true;
+
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const response = await fetch(`${API_BASE_URL}/summarizeFile`, {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+          if (response.ok) {
+            resultEl.textContent = data.text || "تعذر إنشاء الملخص";
+          } else {
+            throw new Error(data.message || data.error || 'فشل في تلخيص الملف');
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          showError(errorEl, error.message);
+          resultEl.textContent = '';
+        } finally {
+          spinner.style.display = 'none';
+          this.disabled = false;
+        }
+      });
+
+      // File input change handler
+      document.getElementById('fileInput').addEventListener('change', function() {
+        document.getElementById('fileInfo').textContent = this.files[0] ?
+          `تم اختيار: ${this.files[0].name} (${(this.files[0].size / (1024 * 1024)).toFixed(2)} ميجابايت)` :
+          'لم يتم اختيار ملف';
+        hideError(document.getElementById('fileError'));
+      });
+
+      // Search Functionality
+      document.getElementById('searchBtn').addEventListener('click', function() {
+        const searchInput = document.getElementById('searchInput').value.trim();
+        const searchResults = document.getElementById('searchResults');
+        
+        if (!searchInput) {
+          searchResults.innerHTML = `
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle"></i> الرجاء إدخال كلمة البحث
+            </div>
+          `;
+          return;
+        }
+
+        // Show loading state
+        searchResults.innerHTML = `
+          <div class="text-center">
+            <div class="spinner" style="display: inline-block; width: 2rem; height: 2rem;"></div>
+            <p>جاري البحث عن "${searchInput}"...</p>
+          </div>
+        `;
+
+        // Make API call to search endpoint
+        fetch(`${API_BASE_URL}/search`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ query: searchInput })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.results && data.results.length > 0) {
+            let resultsHTML = '';
+            data.results.forEach(result => {
+              resultsHTML += `
+                <div class="search-result-item">
+                  <h5>${result.title}</h5>
+                  <p>${result.content}</p>
+                </div>
+              `;
+            });
+            searchResults.innerHTML = resultsHTML;
+          } else {
+            searchResults.innerHTML = `
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> لا توجد نتائج لـ "${searchInput}"
+              </div>
+            `;
+          }
+        })
+        .catch(error => {
+          console.error("Search error:", error);
+          searchResults.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-circle"></i> حدث خطأ أثناء البحث
+            </div>
+          `;
+        });
+      });
+
+      // Enable search on Enter key
+      document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          document.getElementById('searchBtn').click();
+        }
+      });
+
+      // Copy buttons
+      document.getElementById('copyText').addEventListener('click', function() {
+        copyToClipboard('textResult', this);
+      });
+
+      document.getElementById('copyFile').addEventListener('click', function() {
+        copyToClipboard('fileResult', this);
+      });
+    });
+  </script>
+</body>
+</html>
